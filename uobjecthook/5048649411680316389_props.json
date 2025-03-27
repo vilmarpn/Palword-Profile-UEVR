@@ -1,0 +1,18 @@
+{
+    "hide": false,
+    "hide_legacy": false,
+    "path": [
+        "Acknowledged Pawn"
+    ],
+    "properties": [        
+        {
+            "data": 1,
+            "name": "bUseControllerRotationRoll"
+        },
+        {
+            "data": 1,
+            "name": "bUseControllerRotationYaw"
+        }
+    ],
+    "type": "properties"
+}

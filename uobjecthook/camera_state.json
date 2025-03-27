@@ -1,0 +1,13 @@
+{
+    "offset": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 162.39999389648438
+    },
+    "path": [
+        "Acknowledged Pawn",
+        "Properties",
+        "HairMesh"
+    ],
+    "type": "camera"
+}

@@ -1,0 +1,71 @@
+local api = uevr.api
+local vr = uevr.params.vr
+
+local holster_pos = Vector3f.new(50.0, -30.0, 80.0) -- Holster position on the right
+local holster_radius = 30.0
+
+local weapon_in_hand = false
+local vibrating = false
+
+-- Searches for the actual SkeletalMesh of the weapon within Children
+local function set_weapon_visible(pawn, visible)
+    local weapon_mesh = nil
+    for _, child in ipairs(pawn.Children) do
+        local mesh = child:FindComponentByName("SkeletalMeshComponent SkeletalMesh")
+        if mesh then
+            weapon_mesh = mesh
+            break
+        end
+    end
+
+    if weapon_mesh then
+        weapon_mesh:SetVisibility(visible, true)
+        print("Weapon visible?", visible)
+    else
+        print("Weapon NOT found in Children!")
+    end
+end
+
+-- Holster system
+local function update_holster_system(pawn, state)
+    local right_hand = pawn:K2_GetActorLocation() -- Replace with the actual motion controller
+    local distance = (holster_pos - right_hand):length()
+
+    -- Vibration when inside the holster
+    if distance < holster_radius then
+        if not vibrating then
+            print("HAPTIC: Vibrating - Inside the holster!")
+            uevr.sdk.xinput.set_vibration(0, 30000, 30000)  -- Medium vibration
+            vibrating = true
+        end
+
+        -- Picked up the weapon
+        if state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER ~= 0 and not weapon_in_hand then
+            print("PICKED UP the weapon from the holster!")
+            weapon_in_hand = true
+            set_weapon_visible(pawn, true)
+        end
+    else
+        -- Left the holster, stop vibration
+        if vibrating then
+            uevr.sdk.xinput.set_vibration(0, 0, 0)
+            vibrating = false
+        end
+    end
+
+    -- Drops the weapon
+    if weapon_in_hand and state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER == 0 then
+        print("DROPPED the weapon, returned to the holster")
+        weapon_in_hand = false
+        set_weapon_visible(pawn, false)
+    end
+end
+
+-- Now using the correct event you requested
+uevr.sdk.callbacks.on_xinput_get_state(function(retval, user_index, state)
+    local pawn = api:get_local_pawn(0)
+    if not pawn then return end
+
+    update_holster_system(pawn, state)
+end)
+
