@@ -6,3 +6,5 @@ I created a profile for the UEVR Mod in Palworld that adds support for first-per
 This profile is still in development and may receive updates, but it already provides a much smoother VR gameplay experience.
 
 I plan to keep creating more profiles for different games, bringing improvements to virtual reality gameplay.
+
+https://www.patreon.com/c/VPVR
