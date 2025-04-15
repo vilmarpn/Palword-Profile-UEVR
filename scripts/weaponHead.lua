@@ -20,20 +20,49 @@ local weapon_rotation_offset = Vector3f.new(0.0, -0.04, 0.0)
 
 local last_pawn = nil
 
+local RIGHT_GRIP = 0x0200  -- XINPUT_GAMEPAD_RIGHT_SHOULDER
+local was_pressed = false
+local press_time = 0
+local hold_threshold = 0.2  -- segundos para considerar como "segurando"
+local is_holding = false
+
+local function hide_Mesh(name)
+    if name then
+        name:SetRenderInMainPass(false)
+        name:SetRenderInDepthPass(false)
+        name:SetRenderCustomDepth(false)
+    end
+end
+
+local function show_Mesh(name)
+    if name then
+        name:SetRenderInMainPass(true)
+        name:SetRenderInDepthPass(true)
+        name:SetRenderCustomDepth(true)
+    end
+end
+
 -- Applies motion controller state to the weapon
 local function update_weapon_motion_controller()
     local pawn = api:get_local_pawn(0)
     if not pawn or not pawn.Children then return end
-    
+    local Glider_vec3 = Vector3d.new(0, 0, 70)
+    local empty_hitresult = StructObject.new(hitresult_c)
+
     for _, component in ipairs(pawn.Children) do
-        if component and UEVR_UObjectHook.exists(component) and (not string.find(component:get_full_name(), "PalSphere")) then
+        
+        if component and UEVR_UObjectHook.exists(component) and (string.find(component:get_full_name(), "ThrowPalWeapon")) then
+            --hide Sphere
+            --print("aqui",component.SK_Weapon_PalSphere_001)   
+            hide_Mesh(component.SK_Weapon_PalSphere_001)    
+        elseif component and UEVR_UObjectHook.exists(component) and (not string.find(component:get_full_name(), "Glider")) and (not string.find(component:get_full_name(), "Lamp"))then
             local state = UEVR_UObjectHook.get_or_add_motion_controller_state(component.RootComponent)
             if state then
                 state:set_hand(1)  -- Right hand
                 state:set_permanent(true)
                 state:set_location_offset(weapon_location_offset)
                 state:set_rotation_offset(weapon_rotation_offset)
-            end
+            end        
         end
     end
 end
@@ -76,7 +105,7 @@ local function update_weapon_aim_and_trace()
                 local corrected_muzzle_pos = muzzle_pos -- Optional aiming offset could be added here
                 table.insert(ignore_actors, weapon)
                 table.insert(ignore_actors, mesh)
-
+                --print("pos ",corrected_muzzle_pos.X,corrected_muzzle_pos.Y,corrected_muzzle_pos.Z,trace_end.X,trace_end.y,trace_end.Z)
                 -- Line trace
                 local hit = ksl:LineTraceSingle(
                     world,
@@ -100,7 +129,7 @@ local function update_weapon_aim_and_trace()
                 red_color.B = 54.0 / 255.0
                 red_color.A = 1.0
 
-                --ksl:DrawDebugLine(world, corrected_muzzle_pos, trace_end, red_color, 5.0, 2.0)
+                ksl:DrawDebugLine(world, corrected_muzzle_pos, trace_end, red_color, 5.0, 2.0)
 
                 -- If hit, handle impact (optional: apply damage, effects, etc.)
                 if hit and reusable_hit_result then
@@ -162,13 +191,6 @@ local function update_character_rotation(pawn, rotation)
     pawn:K2_SetActorRotation(character_rotation, false)
 end
 
-
-local function hide_Mesh(name)
-    name:SetRenderInMainPass(false)
-    name:SetRenderInDepthPass(false)
-    name:SetRenderCustomDepth(false)
-end
-
 local function hide_player_mesh(pawn)
     -- Checks if pawn is the player character (adjust base name if necessary)
     local pawn_name = pawn:get_full_name()
@@ -220,6 +242,7 @@ uevr.sdk.callbacks.on_early_calculate_stereo_view_offset(function(device, view_i
         end
     end
 
+    update_weapon_aim_and_trace()
 
     --[[ -- Gets the rotation of the player's HMD (to avoid body sway)
     local player_controller = api:get_player_controller(0)
@@ -252,12 +275,60 @@ uevr.sdk.callbacks.on_early_calculate_stereo_view_offset(function(device, view_i
     end ]]
 end) 
 
+uevr.sdk.callbacks.on_xinput_get_state(function(retval, user_index, state)
+    local now = os.clock()
+    local buttons = state.Gamepad.wButtons
+    local is_pressed = (buttons & RIGHT_GRIP) ~= 0
+
+
+    -- Quando o botão é pressionado
+    if is_pressed and not was_pressed then
+        press_time = now
+        was_pressed = true
+        is_holding = false  -- Ainda não sabemos se é clique ou segurar
+
+    -- Enquanto o botão está pressionado
+    elseif is_pressed and was_pressed then
+        local duration = now - press_time
+        if duration >= hold_threshold and not is_holding then
+            print("Começou a SEGURAR o botão")
+            is_holding = true
+        elseif is_holding then
+            -- Aqui você pode fazer alguma ação contínua enquanto segura
+            print("Ainda segurando...")
+            local pawn = api:get_local_pawn(0)
+            if not pawn or not pawn.Children then return end
+
+            for _, component in ipairs(pawn.Children) do
+                
+                if component and UEVR_UObjectHook.exists(component) and (string.find(component:get_full_name(), "ThrowPalWeapon")) then
+                    --hide Sphere
+                    --print("aqui",component.SK_Weapon_PalSphere_001)   
+                    show_Mesh(component.SK_Weapon_PalSphere_001)  
+                end  
+            end
+        end
+
+    -- Quando o botão é solto
+    elseif not is_pressed and was_pressed then
+        local duration = now - press_time
+        if duration < hold_threshold then
+            print("CLIQUE curto detectado")
+        elseif is_holding then
+            print("Parou de SEGURAR após " .. duration .. "s")
+        end
+
+        -- Resetando estados
+        was_pressed = false
+        is_holding = false
+    end
+end)
+
 -- Main loop for updating weapon controller and firing logic
 uevr.sdk.callbacks.on_pre_engine_tick(function(engine, delta)
     
     if vr.is_hmd_active() then
         update_weapon_motion_controller()
-        update_weapon_aim_and_trace()
     end
     
 end)
