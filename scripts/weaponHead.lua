@@ -16,7 +16,7 @@ local kil = kismet_input_library:get_class_default_object()
 
 -- Weapon offset configuration
 local weapon_location_offset = Vector3f.new(1.9078741073608398, -2.1786863803863525, 11.48326301574707)
-local weapon_rotation_offset = Vector3f.new(0.0, -0.04, 0.0)
+local weapon_rotation_offset = Vector3f.new(0.0, 0.0, 0.0)
 
 local last_pawn = nil
 
@@ -51,17 +51,24 @@ local function update_weapon_motion_controller()
 
     for _, component in ipairs(pawn.Children) do
         
-        if component and UEVR_UObjectHook.exists(component) and (string.find(component:get_full_name(), "ThrowPalWeapon")) then
-            --hide Sphere
+        --if component and UEVR_UObjectHook.exists(component) and (string.find(component:get_full_name(), "ThrowPalWeapon")) then
             --print("aqui",component.SK_Weapon_PalSphere_001)   
-            hide_Mesh(component.SK_Weapon_PalSphere_001)    
-        elseif component and UEVR_UObjectHook.exists(component) and (not string.find(component:get_full_name(), "Glider")) and (not string.find(component:get_full_name(), "Lamp"))then
+          --  hide_Mesh(component.SK_Weapon_PalSphere_001)    
+        if component and UEVR_UObjectHook.exists(component) and (not string.find(component:get_full_name(), "Glider")) and (not string.find(component:get_full_name(), "Lamp")) and (not string.find(component:get_full_name(), "PalSphere"))then
+            if string.find(component:get_full_name(), "ThrowPalWeapon") then
+                hide_Mesh(component.SK_Weapon_PalSphere_001)    
+            end    
             local state = UEVR_UObjectHook.get_or_add_motion_controller_state(component.RootComponent)
             if state then
                 state:set_hand(1)  -- Right hand
                 state:set_permanent(true)
                 state:set_location_offset(weapon_location_offset)
-                state:set_rotation_offset(weapon_rotation_offset)
+                if (string.find(component:get_full_name(), "Axe")) or (string.find(component:get_full_name(), "Pickaxe")) or (string.find(component:get_full_name(), "Bat")) or (string.find(component:get_full_name(), "Torch")) or (string.find(component:get_full_name(), "Club")) or (string.find(component:get_full_name(), "Spear")) or (string.find(component:get_full_name(), "Cutter")) or (string.find(component:get_full_name(), "Staff")) or (string.find(component:get_full_name(), "Sword")) or (string.find(component:get_full_name(), "Katana")) then 
+                    state:set_rotation_offset(Vector3f.new(-100.0, 0.0, 0.0))
+                    print("passei")
+                else
+                    state:set_rotation_offset(weapon_rotation_offset)
+                end
             end        
         end
     end
@@ -304,8 +311,16 @@ uevr.sdk.callbacks.on_xinput_get_state(function(retval, user_index, state)
                 if component and UEVR_UObjectHook.exists(component) and (string.find(component:get_full_name(), "ThrowPalWeapon")) then
                     --hide Sphere
                     --print("aqui",component.SK_Weapon_PalSphere_001)   
-                    show_Mesh(component.SK_Weapon_PalSphere_001)  
-                end  
+                    show_Mesh(component.SK_Weapon_PalSphere_001)
+                elseif component and UEVR_UObjectHook.exists(component) and (string.find(component:get_full_name(), "PalSphere")) then
+                    local state = UEVR_UObjectHook.get_or_add_motion_controller_state(component.RootComponent)
+                    if state then
+                        state:set_hand(1)  -- Right hand
+                        state:set_permanent(true)
+                        state:set_location_offset(weapon_location_offset)
+                        state:set_rotation_offset(weapon_rotation_offset)  
+                    end  
+                end
             end
         end
 
