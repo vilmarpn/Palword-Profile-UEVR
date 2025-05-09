@@ -8,3 +8,5 @@ This profile is still in development and may receive updates, but it already pro
 I plan to keep creating more profiles for different games, bringing improvements to virtual reality gameplay.
 
 https://www.patreon.com/c/VPVR
+
+https://ko-fi.com/vilmardpaulla
