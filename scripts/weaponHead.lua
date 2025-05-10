@@ -45,7 +45,7 @@ end
 -- Applies motion controller state to the weapon
 local function update_weapon_motion_controller()
     local pawn = api:get_local_pawn(0)
-    if not pawn or not pawn.Children then return end
+    if not pawn or not pawn.Children or (not string.find(pawn:get_full_name(), "BP_Player_Female_C")) then return end
     local Glider_vec3 = Vector3d.new(0, 0, 70)
     local empty_hitresult = StructObject.new(hitresult_c)
 
@@ -77,7 +77,7 @@ end
 -- Handles weapon aiming and firing trace
 local function update_weapon_aim_and_trace()
     local pawn = api:get_local_pawn(0)
-    if not pawn or not pawn.Children then return end
+    if not pawn or not pawn.Children or (not string.find(pawn:get_full_name(), "BP_Player_Female_C")) then return end
 
     local zero_color = StructObject.new(color_c)
     local reusable_hit_result = StructObject.new(hitresult_c)
@@ -215,7 +215,7 @@ local delta = 10.0
 
 uevr.sdk.callbacks.on_early_calculate_stereo_view_offset(function(device, view_index, world_to_meters, position, rotation, is_double)
     local pawn = api:get_local_pawn(0)
-    if not pawn then return end
+    if not pawn or (not string.find(pawn:get_full_name(), "BP_Player_Female_C")) then return end
 
     hide_player_mesh(pawn)
 
